@@ -1,15 +1,21 @@
 import React from 'react';
 import { Trip, TripSummary } from '../types';
 import { formatMoney } from '../utils/math';
-import { Users, Calendar, ArrowUpRight, ArrowDownLeft, CheckCircle2 } from 'lucide-react';
+import { Users, Calendar, ArrowUpRight, ArrowDownLeft, CheckCircle2, Share2 } from 'lucide-react';
 
 interface TripSummaryHeaderProps {
   trip: Trip;
   summary: TripSummary;
   onOpenSettlement?: () => void;
+  onOpenShare?: () => void;
 }
 
-export const TripSummaryHeader: React.FC<TripSummaryHeaderProps> = ({ trip, summary, onOpenSettlement }) => {
+export const TripSummaryHeader: React.FC<TripSummaryHeaderProps> = ({
+  trip,
+  summary,
+  onOpenSettlement,
+  onOpenShare,
+}) => {
   const currency = trip.settlementCurrency;
 
   return (
@@ -39,18 +45,32 @@ export const TripSummaryHeader: React.FC<TripSummaryHeaderProps> = ({ trip, summ
             </div>
           </div>
 
-          {/* Member Avatars */}
-          <div className="flex items-center -space-x-1.5 self-start sm:self-auto">
-            {trip.members.map(m => (
-              <div
-                key={m.id}
-                title={`${m.name}${m.isCurrentUser ? '（我）' : ''}`}
-                style={{ backgroundColor: m.avatarColor }}
-                className="w-7 h-7 rounded-full text-white text-xs font-medium flex items-center justify-center ring-2 ring-white shadow-sm"
+          {/* Member Avatars & Quick Invite Button */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="flex items-center -space-x-1.5">
+              {trip.members.map(m => (
+                <div
+                  key={m.id}
+                  title={`${m.name}${m.isCurrentUser ? '（我）' : ''}`}
+                  style={{ backgroundColor: m.avatarColor }}
+                  className="w-7 h-7 rounded-full text-white text-xs font-medium flex items-center justify-center ring-2 ring-white shadow-sm"
+                >
+                  {m.name.slice(0, 1)}
+                </div>
+              ))}
+            </div>
+
+            {onOpenShare && (
+              <button
+                type="button"
+                onClick={onOpenShare}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200/80 text-neutral-700 text-xs font-medium border border-neutral-200/80 transition-all active:scale-95 shadow-2xs"
+                title="邀请朋友加入房间"
               >
-                {m.name.slice(0, 1)}
-              </div>
-            ))}
+                <Share2 className="w-3 h-3 text-neutral-500" />
+                <span>邀请</span>
+              </button>
+            )}
           </div>
         </div>
 

@@ -269,21 +269,14 @@ export const App: React.FC = () => {
       };
     }
 
-    // 1. Polling interval: sync every 4.5 seconds if tab is visible and no blocking edit is open
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible' && !editingExpense && !aiDraft) {
-        refreshActiveTrip(true);
-      }
-    }, 4500);
-
-    // 2. Immediate sync when user switches back to this tab / browser app
+    // Foreground wake-up synchronization when user returns to this tab / browser app (no background interval polling)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refreshActiveTrip(true);
       }
     };
 
-    // 3. Immediate sync on window focus
+    // Immediate sync on window focus
     const handleWindowFocus = () => {
       refreshActiveTrip(true);
     };
@@ -292,11 +285,10 @@ export const App: React.FC = () => {
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
-      clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [activeTripId, editingExpense, aiDraft, refreshActiveTrip, loadTrips]);
+  }, [activeTripId, refreshActiveTrip, loadTrips]);
 
   const handleSelectTrip = async (tripId: string) => {
     sessionStorage.setItem('tripsplit_active_trip_id', tripId);
@@ -600,6 +592,7 @@ export const App: React.FC = () => {
             trip={effectiveTrip}
             summary={summary}
             onOpenSettlement={() => setActiveTab('settlement')}
+            onOpenShare={() => handleOpenShare(effectiveTrip, false)}
           />
 
           {/* 4 Navigation Tabs */}
