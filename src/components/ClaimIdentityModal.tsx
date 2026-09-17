@@ -33,10 +33,13 @@ export const ClaimIdentityModal: React.FC<ClaimIdentityModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-float border border-neutral-200 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-float border border-neutral-200 overflow-hidden flex flex-col max-h-[92vh] pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-6 duration-200">
+        {/* Mobile Pull Handle Indicator */}
+        <div className="w-10 h-1 bg-neutral-300 rounded-full mx-auto mt-2.5 mb-1 sm:hidden" />
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white p-5 flex items-start justify-between">
+        <div className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 text-white px-5 py-4 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400">
               <UserCheck className="w-6 h-6" />
@@ -76,7 +79,7 @@ export const ClaimIdentityModal: React.FC<ClaimIdentityModalProps> = ({
               我是群里的：
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {trip.members.map(m => (
+              {trip.members.map((m, idx) => (
                 <button
                   key={m.id}
                   type="button"

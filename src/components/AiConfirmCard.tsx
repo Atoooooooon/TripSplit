@@ -209,7 +209,7 @@ export const AiConfirmCard: React.FC<AiConfirmCardProps> = ({
 
               {isForeign && (
                 <div className="text-xs text-neutral-400 mt-0.5 font-medium">
-                  ≈ {formatMoney(settlementAmount, settlementCurrency)}
+                  ≈ {formatMoney(expSettlementAmount, settlementCurrency)}
                   <span className="text-[10px] text-neutral-400 ml-1">
                     (汇率 1:{exchangeRate})
                   </span>

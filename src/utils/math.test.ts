@@ -40,6 +40,7 @@ describe('Debt Simplification (Min Cash Flow)', () => {
       startDate: '2026-10-01',
       endDate: '2026-10-05',
       settlementCurrency: 'CNY',
+      accessCode: 'TEST01',
       members,
       createdAt: '',
     };
@@ -114,6 +115,7 @@ describe('Debt Simplification (Min Cash Flow)', () => {
       startDate: '2026-09-30',
       endDate: '2026-10-07',
       settlementCurrency: 'CNY',
+      accessCode: 'TEST02',
       members,
       createdAt: '',
     };

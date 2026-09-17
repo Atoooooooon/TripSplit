@@ -1,4 +1,4 @@
-import { Trip, Expense, Settlement, DebtTransfer, MemberBalance, Currency, TripSummary } from '../types';
+import { Trip, TripMember, Expense, Settlement, DebtTransfer, MemberBalance, Currency, TripSummary } from '../types';
 import { roundCurrency, formatMoney } from './math';
 
 /**
