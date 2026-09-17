@@ -1,0 +1,19 @@
+[Unit]
+Description=TripSplit Travel AA Expense Tracking Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/tripsplit
+Environment=NODE_ENV=production
+Environment=PORT=81
+Environment=DATA_DIR=/opt/tripsplit/data
+ExecStart=/usr/bin/node /opt/tripsplit/dist/server.mjs
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
