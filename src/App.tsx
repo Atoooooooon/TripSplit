@@ -198,6 +198,9 @@ export const App: React.FC = () => {
           addStoredJoinedCode(joined.accessCode);
           sessionStorage.setItem('tripsplit_active_trip_id', joined.tripId);
           await loadTrips(joined.tripId);
+          try {
+            window.history.replaceState({}, '', window.location.pathname);
+          } catch (e) {}
           return;
         } catch (e) {
           console.warn('Auto join by URL code failed:', e);
@@ -567,7 +570,7 @@ export const App: React.FC = () => {
   const currentMember = effectiveTrip?.members.find(m => m.id === currentMemberId) || effectiveTrip?.members[0] || null;
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col selection:bg-neutral-900 selection:text-white pb-10">
+    <div className="min-h-screen bg-neutral-50 flex flex-col selection:bg-neutral-900 selection:text-white pb-32 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       {/* Top Navigation */}
       <Navbar
         currentTrip={effectiveTrip}

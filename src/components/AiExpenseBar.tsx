@@ -100,7 +100,7 @@ export const AiExpenseBar: React.FC<AiExpenseBarProps> = ({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-white via-white/95 to-white/0 pt-6 pb-4 px-3 sm:px-4 pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-white via-white/95 to-white/0 pt-6 pb-4 pb-[max(1rem,env(safe-area-inset-bottom))] px-3 sm:px-4 pointer-events-none">
       <div className="max-w-2xl mx-auto space-y-2 pointer-events-auto">
         {/* Continuous Clarification Bubble */}
         {clarificationState?.needed && (

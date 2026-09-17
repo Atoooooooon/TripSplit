@@ -306,14 +306,15 @@ router.delete('/:id/members/:memberId', (req, res) => {
   try {
     const { id: tripId, memberId } = req.params;
 
-    // Check if member has active expenses
+    // Check if member has active expenses or settlements
     const payerCount = (db.prepare('SELECT COUNT(*) as c FROM expense_payers WHERE member_id = ?').get(memberId) as any).c;
     const partCount = (db.prepare('SELECT COUNT(*) as c FROM expense_participants WHERE member_id = ?').get(memberId) as any).c;
+    const settlementCount = (db.prepare('SELECT COUNT(*) as c FROM settlements WHERE from_member_id = ? OR to_member_id = ?').get(memberId, memberId) as any).c;
 
-    if (payerCount > 0 || partCount > 0) {
+    if (payerCount > 0 || partCount > 0 || settlementCount > 0) {
       return res.status(400).json({
         success: false,
-        error: '该成员已有参与的记账消费记录，无法直接删除。请先修改相关账单。',
+        error: '该成员已有参与的记账消费或结算记录，无法直接删除。请先修改或删除相关账单。',
       });
     }
 

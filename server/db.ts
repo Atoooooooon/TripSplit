@@ -128,11 +128,10 @@ export function initDb() {
     console.warn('Migration access_code check failed', e);
   }
 
-  // Ensure dev_password is set to 010034 in database settings table
+  // Ensure dev_password is set to 010034 in database settings table (do not overwrite if changed)
   try {
     db.prepare(`
-      INSERT INTO settings (key, value) VALUES ('dev_password', '010034')
-      ON CONFLICT(key) DO UPDATE SET value = '010034'
+      INSERT OR IGNORE INTO settings (key, value) VALUES ('dev_password', '010034')
     `).run();
   } catch (e) {
     console.warn('Failed to seed dev_password', e);
@@ -164,9 +163,9 @@ function seedDefaultTripIfEmpty() {
     now
   );
 
-  // Members: 我, 小王, 小李, Amy
+  // Members: 阿伟, 小王, 小李, Amy (never use "我" to prevent confusion)
   const members = [
-    { id: 'mem_me', name: '我', isCurrentUser: 1, color: '#3b82f6' },
+    { id: 'mem_wei', name: '阿伟', isCurrentUser: 0, color: '#3b82f6' },
     { id: 'mem_wang', name: '小王', isCurrentUser: 0, color: '#10b981' },
     { id: 'mem_li', name: '小李', isCurrentUser: 0, color: '#f59e0b' },
     { id: 'mem_amy', name: 'Amy', isCurrentUser: 0, color: '#ec4899' },
@@ -181,7 +180,7 @@ function seedDefaultTripIfEmpty() {
   }
 
   // Sample Expenses:
-  // 1. 烤肉 ₩86,000 (KRW) 我付，4人AA (1 CNY = 190 KRW -> 452.63 CNY)
+  // 1. 烤肉 ₩86,000 (KRW) 阿伟付，4人AA (1 CNY = 190 KRW -> 452.63 CNY)
   const exp1Id = 'exp_sample_1';
   db.prepare(`
     INSERT INTO expenses (id, trip_id, title, category, amount, currency, settlement_amount, exchange_rate, date, split_type, created_at)
@@ -189,7 +188,7 @@ function seedDefaultTripIfEmpty() {
   `).run(exp1Id, tripId, '烤肉', '餐饮', 86000, 'KRW', 452.63, 190, '2026-10-01', 'equal', now);
 
   db.prepare(`INSERT INTO expense_payers (id, expense_id, member_id, amount) VALUES (?, ?, ?, ?)`).run(
-    'p_1', exp1Id, 'mem_me', 86000
+    'p_1', exp1Id, 'mem_wei', 86000
   );
   // 86000 / 4 = 21500 each
   for (const m of members) {
@@ -198,7 +197,7 @@ function seedDefaultTripIfEmpty() {
     );
   }
 
-  // 2. 打车 ₩23,000 (KRW) 小王付，我、小王、Amy 3人 (121.05 CNY)
+  // 2. 打车 ₩23,000 (KRW) 小王付，阿伟、小王、Amy 3人 (121.05 CNY)
   const exp2Id = 'exp_sample_2';
   db.prepare(`
     INSERT INTO expenses (id, trip_id, title, category, amount, currency, settlement_amount, exchange_rate, date, split_type, created_at)
@@ -209,11 +208,11 @@ function seedDefaultTripIfEmpty() {
     'p_2', exp2Id, 'mem_wang', 23000
   );
   // 23000 / 3 = 7667, 7667, 7666
-  db.prepare(`INSERT INTO expense_participants (id, expense_id, member_id, share) VALUES (?, ?, ?, ?)`).run('part_2_me', exp2Id, 'mem_me', 7667);
+  db.prepare(`INSERT INTO expense_participants (id, expense_id, member_id, share) VALUES (?, ?, ?, ?)`).run('part_2_wei', exp2Id, 'mem_wei', 7667);
   db.prepare(`INSERT INTO expense_participants (id, expense_id, member_id, share) VALUES (?, ?, ?, ?)`).run('part_2_wang', exp2Id, 'mem_wang', 7667);
   db.prepare(`INSERT INTO expense_participants (id, expense_id, member_id, share) VALUES (?, ?, ?, ?)`).run('part_2_amy', exp2Id, 'mem_amy', 7666);
 
-  // 3. 酒店 ₩420,000 (KRW) 我付款，4人AA (2210.53 CNY)
+  // 3. 酒店 ₩420,000 (KRW) 阿伟付款，4人AA (2210.53 CNY)
   const exp3Id = 'exp_sample_3';
   db.prepare(`
     INSERT INTO expenses (id, trip_id, title, category, amount, currency, settlement_amount, exchange_rate, date, split_type, created_at)
@@ -221,7 +220,7 @@ function seedDefaultTripIfEmpty() {
   `).run(exp3Id, tripId, '首尔明洞酒店', '住宿', 420000, 'KRW', 2210.53, 190, '2026-10-02', 'equal', now);
 
   db.prepare(`INSERT INTO expense_payers (id, expense_id, member_id, amount) VALUES (?, ?, ?, ?)`).run(
-    'p_3', exp3Id, 'mem_me', 420000
+    'p_3', exp3Id, 'mem_wei', 420000
   );
   for (const m of members) {
     db.prepare(`INSERT INTO expense_participants (id, expense_id, member_id, share) VALUES (?, ?, ?, ?)`).run(
@@ -237,7 +236,7 @@ function seedDefaultTripIfEmpty() {
   `).run(trip2Id, '2026 日本东京旅行', '日本 · 东京', '2026-12-10', '2026-12-16', 'CNY', now);
 
   const jMembers = [
-    { id: 'jm_me', name: '我', isCurrentUser: 1, color: '#3b82f6' },
+    { id: 'jm_wei', name: '阿伟', isCurrentUser: 0, color: '#3b82f6' },
     { id: 'jm_wang', name: '小王', isCurrentUser: 0, color: '#10b981' },
     { id: 'jm_amy', name: 'Amy', isCurrentUser: 0, color: '#ec4899' },
   ];

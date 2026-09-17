@@ -44,12 +44,16 @@ export async function copyText(text: string): Promise<boolean> {
  * Generate full, clean share URL for a trip access code
  */
 export function getTripShareUrl(accessCode: string): string {
-  const origin = window.location.origin;
-  let pathname = window.location.pathname;
-  if (!pathname.endsWith('/')) {
-    pathname = `${pathname}/`;
+  try {
+    const url = new URL(window.location.href);
+    url.search = `?code=${encodeURIComponent(accessCode.trim().toUpperCase())}`;
+    url.hash = '';
+    return url.toString();
+  } catch (e) {
+    const origin = window.location.origin;
+    let pathname = window.location.pathname;
+    return `${origin}${pathname}?code=${encodeURIComponent(accessCode.trim().toUpperCase())}`;
   }
-  return `${origin}${pathname}?code=${encodeURIComponent(accessCode.trim().toUpperCase())}`;
 }
 
 /**

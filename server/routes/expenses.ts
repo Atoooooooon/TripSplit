@@ -197,7 +197,12 @@ const handleDeleteExpense = (req: any, res: any, next: any) => {
     if (expenseId && expenseId.startsWith('stl_')) {
       return next();
     }
-    db.prepare('DELETE FROM expenses WHERE id = ?').run(expenseId);
+    const tx = db.transaction(() => {
+      db.prepare('DELETE FROM expense_payers WHERE expense_id = ?').run(expenseId);
+      db.prepare('DELETE FROM expense_participants WHERE expense_id = ?').run(expenseId);
+      db.prepare('DELETE FROM expenses WHERE id = ?').run(expenseId);
+    });
+    tx();
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
