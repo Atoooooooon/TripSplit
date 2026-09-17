@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -22,6 +23,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 81;
 
 // Middlewares
 app.use(cors());
+app.use(compression()); // Gzip compression for all responses (JS/CSS/JSON)
 app.use(express.json());
 
 // Prevent HTTP caching on all API routes so multiple devices always get live updates
@@ -56,9 +58,30 @@ app.get('/api/health', (req, res) => {
 // Serve frontend static assets in production
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+  // Long-term immutable caching for hashed JS & CSS assets
+  app.use(
+    '/assets',
+    express.static(path.join(distPath, 'assets'), {
+      maxAge: '1y',
+      immutable: true,
+    })
+  );
+
+  // Other static files (favicon, etc.)
+  app.use(
+    express.static(distPath, {
+      maxAge: 0,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+      },
+    })
+  );
+
   app.use((req, res, next) => {
     if (!req.path.startsWith('/api') && req.method === 'GET') {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     } else {
       next();

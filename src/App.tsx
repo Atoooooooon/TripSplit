@@ -164,18 +164,24 @@ export const App: React.FC = () => {
     try {
       if (!silent) setIsLoading(true);
       const codes = getStoredJoinedCodes();
-      const list = codes.length > 0 ? await fetchTrips(codes) : [];
-      setTrips(list);
 
-      // Only select an active trip if explicitly requested
+      // Parallelize fetching trip list and trip detail when selectTripId is provided
       if (selectTripId) {
         setActiveTripId(selectTripId);
-        const detail = await fetchTrip(selectTripId);
+        const [list, detail] = await Promise.all([
+          codes.length > 0 ? fetchTrips(codes) : Promise.resolve([]),
+          fetchTrip(selectTripId),
+        ]);
+        setTrips(list);
         setActiveTrip(detail);
         syncPerspective(detail, true);
-      } else if (!silent) {
-        setActiveTripId('');
-        setActiveTrip(null);
+      } else {
+        const list = codes.length > 0 ? await fetchTrips(codes) : [];
+        setTrips(list);
+        if (!silent) {
+          setActiveTripId('');
+          setActiveTrip(null);
+        }
       }
     } catch (err) {
       console.error('Failed to load trips', err);
@@ -238,17 +244,12 @@ export const App: React.FC = () => {
         setActiveTrip(detail);
         syncPerspective(detail, false);
       }
-      const codes = getStoredJoinedCodes();
-      if (codes.length > 0) {
-        const list = await fetchTrips(codes);
-        setTrips(list);
-      }
     } catch (e) {
       console.error('Failed to refresh trip', e);
     } finally {
       isSyncingRef.current = false;
       if (!silent) {
-        setTimeout(() => setIsSyncing(false), 350);
+        setTimeout(() => setIsSyncing(false), 300);
       }
     }
   }, [activeTripId]);
@@ -268,12 +269,12 @@ export const App: React.FC = () => {
       };
     }
 
-    // 1. Polling interval: sync every 3.5 seconds if tab is visible and no blocking edit is open
+    // 1. Polling interval: sync every 4.5 seconds if tab is visible and no blocking edit is open
     const timer = setInterval(() => {
       if (document.visibilityState === 'visible' && !editingExpense && !aiDraft) {
         refreshActiveTrip(true);
       }
-    }, 3500);
+    }, 4500);
 
     // 2. Immediate sync when user switches back to this tab / browser app
     const handleVisibilityChange = () => {
