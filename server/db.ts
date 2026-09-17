@@ -89,6 +89,7 @@ export function initDb() {
       currency TEXT NOT NULL,
       settled_at TEXT NOT NULL,
       note TEXT,
+      expense_id TEXT,
       FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
       FOREIGN KEY (from_member_id) REFERENCES trip_members(id) ON DELETE CASCADE,
       FOREIGN KEY (to_member_id) REFERENCES trip_members(id) ON DELETE CASCADE
@@ -99,6 +100,13 @@ export function initDb() {
       value TEXT NOT NULL
     );
   `);
+
+  // Migration: add expense_id column to settlements if not exists
+  try {
+    db.exec('ALTER TABLE settlements ADD COLUMN expense_id TEXT');
+  } catch (e) {
+    // Column already exists
+  }
 
   // Migration: add access_code column if table already exists without it
   try {

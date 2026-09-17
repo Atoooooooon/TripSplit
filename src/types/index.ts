@@ -106,6 +106,7 @@ export interface Settlement {
   currency: Currency;
   settledAt: string;
   note?: string;
+  expenseId?: string;
 }
 
 export interface Trip {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Expense, Settlement, TripMember, CATEGORY_EMOJIS, Currency } from '../types';
 import { formatMoney } from '../utils/math';
+import { getExpenseDebtorBreakdown } from '../utils/debtSimplifier';
 import { Trash2, Edit3, ArrowLeftRight, Zap, CheckCircle2 } from 'lucide-react';
 
 interface ExpenseTimelineProps {
@@ -233,22 +234,10 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
                   participantText = names.join('、');
                 }
 
-                // Check if current user owes money on this bill and can 1-click quick-settle
-                const myParticipation = currentMemberId
-                  ? exp.participants.find(p => p.memberId === currentMemberId)
-                  : null;
-                const myPaid = currentMemberId
-                  ? (exp.payers.find(p => p.memberId === currentMemberId)?.amount || 0)
-                  : 0;
-                const myShare = myParticipation ? myParticipation.share : 0;
-                
-                // Can quick-settle if current user participated, owes share, didn't pay this bill, and there's a sole payer
-                const canQuickSettle =
-                  solePayerId &&
-                  solePayerId !== currentMemberId &&
-                  myShare > 0 &&
-                  myPaid < myShare &&
-                  onQuickSettleExpense;
+                // Compute per-bill debtor breakdown
+                const breakdown = getExpenseDebtorBreakdown(exp, settlements, members, currentMemberId);
+                const myDebtor = breakdown.debtors.find(d => d.isCurrentUser);
+                const canQuickSettle = breakdown.canQuickSettle && !!onQuickSettleExpense;
 
                 return (
                   <div
@@ -319,16 +308,37 @@ export const ExpenseTimeline: React.FC<ExpenseTimelineProps> = ({
                     {canQuickSettle && (
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-100/90 text-xs">
                         <span className="text-neutral-500 text-[11px]">
-                          这单我该出：<strong className="text-neutral-800">{formatMoney(myShare, exp.currency)}</strong>
+                          {myDebtor && !myDebtor.isSettled ? (
+                            <>
+                              这单我该出：<strong className="text-neutral-800">{formatMoney(myDebtor.remainingOwed, exp.currency)}</strong>
+                            </>
+                          ) : (
+                            <>
+                              本单待结清：<strong className="text-amber-700 font-semibold">{breakdown.unsettledCount} 人</strong>
+                            </>
+                          )}
                         </span>
                         <button
                           type="button"
-                          onClick={() => onQuickSettleExpense(exp, solePayerId!, myShare)}
+                          onClick={() => {
+                            const defaultAmount = myDebtor && !myDebtor.isSettled
+                              ? myDebtor.remainingOwed
+                              : (breakdown.debtors.find(d => !d.isSettled)?.remainingOwed || 0);
+                            onQuickSettleExpense(exp, breakdown.payerId || solePayerId || '', defaultAmount);
+                          }}
                           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold border border-emerald-200/80 transition-all active:scale-95 shadow-2xs"
-                          title={`结清这笔账单，直接转给 ${solePayerName} ¥${myShare}`}
+                          title={
+                            myDebtor && !myDebtor.isSettled
+                              ? `结清这笔账单，转给 ${breakdown.payerName} ¥${myDebtor.remainingOwed}`
+                              : `结清这笔账单款项 (${breakdown.unsettledCount}人待还)`
+                          }
                         >
                           <Zap className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
-                          <span>结清此单: 转给 {solePayerName} {formatMoney(myShare, exp.currency)}</span>
+                          <span>
+                            {myDebtor && !myDebtor.isSettled
+                              ? `结清此单: 转给 ${breakdown.payerName} ${formatMoney(myDebtor.remainingOwed, exp.currency)}`
+                              : `结清此单 (${breakdown.unsettledCount}人待结清)`}
+                          </span>
                         </button>
                       </div>
                     )}

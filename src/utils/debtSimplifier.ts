@@ -259,3 +259,103 @@ export function calculateBalancesAndTransfers(
     summary,
   };
 }
+
+export interface ExpenseDebtorInfo {
+  memberId: string;
+  memberName: string;
+  avatarColor: string;
+  isCurrentUser: boolean;
+  initialOwed: number;   // In expense currency
+  settledAmount: number; // In expense currency
+  remainingOwed: number; // In expense currency
+  isSettled: boolean;
+}
+
+export interface ExpenseDebtorBreakdown {
+  expenseId: string;
+  payerId: string | null;
+  payerName: string;
+  payerMember: TripMember | null;
+  debtors: ExpenseDebtorInfo[];
+  unsettledCount: number;
+  isFullySettled: boolean;
+  canQuickSettle: boolean;
+}
+
+/**
+ * Calculates per-participant bill debt relationships and settlement status for a specific expense.
+ */
+export function getExpenseDebtorBreakdown(
+  expense: Expense,
+  settlements: Settlement[] = [],
+  members: TripMember[] = [],
+  currentMemberId?: string
+): ExpenseDebtorBreakdown {
+  const currency = expense.currency;
+  const primaryPayer = (expense.payers && expense.payers.length > 0)
+    ? expense.payers.reduce((max, p) => (p.amount > (max?.amount || 0) ? p : max), expense.payers[0])
+    : null;
+  const payerId = primaryPayer?.memberId || null;
+  const payerMember = members.find(m => m.id === payerId) || null;
+  const payerName = payerMember
+    ? (payerMember.id === currentMemberId ? '我' : payerMember.name)
+    : '垫付方';
+
+  const memberMap = new Map(members.map(m => [m.id, m]));
+  const debtors: ExpenseDebtorInfo[] = [];
+
+  (expense.participants || []).forEach(p => {
+    const upfrontPaid = expense.payers?.find(payer => payer.memberId === p.memberId)?.amount || 0;
+    const initialOwed = roundCurrency(Math.max(0, p.share - upfrontPaid), currency);
+
+    // If initialOwed > 0.01, this participant owes money on this bill
+    if (initialOwed > 0.01) {
+      // Match settlements specifically recorded for this expense from this debtor
+      const settledAmount = roundCurrency(
+        settlements
+          .filter(s => {
+            const matchesExpense =
+              s.expenseId === expense.id ||
+              (s.note && s.note.includes(`结清此单: ${expense.title}`)) ||
+              (s.note && s.note.includes(expense.title));
+            const matchesDebtor = s.fromMemberId === p.memberId;
+            const matchesCreditor = !payerId || s.toMemberId === payerId;
+            return matchesExpense && matchesDebtor && matchesCreditor;
+          })
+          .reduce((sum, s) => sum + s.amount, 0),
+        currency
+      );
+
+      const remainingOwed = roundCurrency(Math.max(0, initialOwed - settledAmount), currency);
+      const isSettled = remainingOwed <= 0.01;
+      const mem = memberMap.get(p.memberId);
+
+      debtors.push({
+        memberId: p.memberId,
+        memberName: mem ? mem.name : '成员',
+        avatarColor: mem ? mem.avatarColor : '#6b7280',
+        isCurrentUser: p.memberId === currentMemberId,
+        initialOwed,
+        settledAmount,
+        remainingOwed,
+        isSettled,
+      });
+    }
+  });
+
+  const unsettledCount = debtors.filter(d => !d.isSettled).length;
+  const isFullySettled = debtors.length > 0 && unsettledCount === 0;
+  // Can quick settle if there are debtors and at least one is not yet settled
+  const canQuickSettle = debtors.length > 0 && !isFullySettled;
+
+  return {
+    expenseId: expense.id,
+    payerId,
+    payerName,
+    payerMember,
+    debtors,
+    unsettledCount,
+    isFullySettled,
+    canQuickSettle,
+  };
+}

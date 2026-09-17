@@ -7,7 +7,7 @@ const router = Router();
 const handleRecordSettlement = (req: Request, res: Response) => {
   try {
     const tripId = req.params.tripId;
-    const { fromMemberId, toMemberId, amount, currency = 'CNY', note } = req.body;
+    const { fromMemberId, toMemberId, amount, currency = 'CNY', note, expenseId } = req.body;
 
     if (!tripId) {
       return res.status(400).json({ success: false, error: '缺少 tripId' });
@@ -29,11 +29,11 @@ const handleRecordSettlement = (req: Request, res: Response) => {
     const now = new Date().toISOString();
 
     db.prepare(`
-      INSERT INTO settlements (id, trip_id, from_member_id, to_member_id, amount, currency, settled_at, note)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(settlementId, tripId, fromMemberId, toMemberId, numAmount, currency, now, note || null);
+      INSERT INTO settlements (id, trip_id, from_member_id, to_member_id, amount, currency, settled_at, note, expense_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(settlementId, tripId, fromMemberId, toMemberId, numAmount, currency, now, note || null, expenseId || null);
 
-    console.log(`[Settlement] Recorded ${settlementId} in trip ${tripId}: ${fromMemberId} -> ${toMemberId} ¥${numAmount}`);
+    console.log(`[Settlement] Recorded ${settlementId} in trip ${tripId}: ${fromMemberId} -> ${toMemberId} ¥${numAmount}${expenseId ? ` for expense ${expenseId}` : ''}`);
 
     res.json({ success: true, settlementId });
   } catch (err: any) {

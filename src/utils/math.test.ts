@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { splitEqually, roundCurrency, convertCurrency } from './math';
-import { calculateBalancesAndTransfers } from './debtSimplifier';
+import { calculateBalancesAndTransfers, getExpenseDebtorBreakdown } from './debtSimplifier';
 import { Trip, Expense, TripMember } from '../types';
 
 describe('Math utilities', () => {
@@ -190,5 +190,96 @@ describe('Debt Simplification (Min Cash Flow)', () => {
     expect(rawMeToLzh?.amount).toBe(515);
     expect(rawMeToLyy?.amount).toBe(20);
     expect(rawLzhToLyy?.amount).toBe(20);
+  });
+
+  it('should track per-bill individual debtor relationships and hide quick-settle when all debtors settled', () => {
+    const members: TripMember[] = [
+      { id: 'm1', tripId: 't1', name: 'Alice', isCurrentUser: true, avatarColor: '#3b82f6', createdAt: '' },
+      { id: 'm2', tripId: 't1', name: 'Bob', isCurrentUser: false, avatarColor: '#10b981', createdAt: '' },
+      { id: 'm3', tripId: 't1', name: 'Charlie', isCurrentUser: false, avatarColor: '#f59e0b', createdAt: '' },
+    ];
+
+    const exp: Expense = {
+      id: 'e_dinner',
+      tripId: 't1',
+      title: 'Dinner',
+      category: '餐饮',
+      amount: 300,
+      currency: 'CNY',
+      settlementAmount: 300,
+      exchangeRate: 1,
+      date: '2026-10-01',
+      splitType: 'equal',
+      payers: [{ memberId: 'm1', amount: 300 }],
+      participants: [
+        { memberId: 'm1', share: 100 },
+        { memberId: 'm2', share: 100 },
+        { memberId: 'm3', share: 100 },
+      ],
+      createdAt: '',
+    };
+
+    // Stage 1: No settlements
+    const stage1 = getExpenseDebtorBreakdown(exp, [], members, 'm1');
+    expect(stage1.debtors.length).toBe(2); // Bob & Charlie
+    expect(stage1.unsettledCount).toBe(2);
+    expect(stage1.canQuickSettle).toBe(true);
+    expect(stage1.isFullySettled).toBe(false);
+
+    const bobD1 = stage1.debtors.find(d => d.memberId === 'm2');
+    const charlieD1 = stage1.debtors.find(d => d.memberId === 'm3');
+    expect(bobD1?.initialOwed).toBe(100);
+    expect(bobD1?.remainingOwed).toBe(100);
+    expect(bobD1?.isSettled).toBe(false);
+    expect(charlieD1?.remainingOwed).toBe(100);
+    expect(charlieD1?.isSettled).toBe(false);
+
+    // Stage 2: Bob settles 100
+    const settlementsStage2 = [
+      {
+        id: 's1',
+        tripId: 't1',
+        fromMemberId: 'm2',
+        toMemberId: 'm1',
+        amount: 100,
+        currency: 'CNY' as const,
+        settledAt: '2026-10-01T12:00:00Z',
+        expenseId: 'e_dinner',
+        note: '结清此单: Dinner (Bob)',
+      },
+    ];
+
+    const stage2 = getExpenseDebtorBreakdown(exp, settlementsStage2, members, 'm1');
+    expect(stage2.unsettledCount).toBe(1);
+    expect(stage2.canQuickSettle).toBe(true); // Charlie still owes, so button is still there!
+    expect(stage2.isFullySettled).toBe(false);
+
+    const bobD2 = stage2.debtors.find(d => d.memberId === 'm2');
+    const charlieD2 = stage2.debtors.find(d => d.memberId === 'm3');
+    expect(bobD2?.isSettled).toBe(true);
+    expect(bobD2?.remainingOwed).toBe(0);
+    expect(charlieD2?.isSettled).toBe(false);
+    expect(charlieD2?.remainingOwed).toBe(100);
+
+    // Stage 3: Charlie also settles 100
+    const settlementsStage3 = [
+      ...settlementsStage2,
+      {
+        id: 's2',
+        tripId: 't1',
+        fromMemberId: 'm3',
+        toMemberId: 'm1',
+        amount: 100,
+        currency: 'CNY' as const,
+        settledAt: '2026-10-01T13:00:00Z',
+        expenseId: 'e_dinner',
+        note: '结清此单: Dinner (Charlie)',
+      },
+    ];
+
+    const stage3 = getExpenseDebtorBreakdown(exp, settlementsStage3, members, 'm1');
+    expect(stage3.unsettledCount).toBe(0);
+    expect(stage3.isFullySettled).toBe(true);
+    expect(stage3.canQuickSettle).toBe(false); // All debtors settled, button disappears!
   });
 });

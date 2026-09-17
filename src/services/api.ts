@@ -137,6 +137,7 @@ export async function recordSettlement(tripId: string, settlementData: {
   amount: number;
   currency: Currency;
   note?: string;
+  expenseId?: string;
 }): Promise<string> {
   const json = await safeFetchJson(`${BASE_URL}/trips/${tripId}/settlements`, {
     method: 'POST',

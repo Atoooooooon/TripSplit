@@ -414,6 +414,7 @@ export const App: React.FC = () => {
     amount: number;
     currency: Currency;
     note: string;
+    expenseId?: string;
   }) => {
     if (!activeTrip) return;
     await recordSettlement(activeTrip.id, data);
@@ -710,7 +711,9 @@ export const App: React.FC = () => {
         <QuickSettleModal
           expense={quickSettleTarget.expense}
           payer={quickSettleTarget.payer}
+          members={effectiveTrip.members}
           currentMember={currentMember}
+          settlements={effectiveTrip.settlements || []}
           amount={quickSettleTarget.amount}
           settlementCurrency={effectiveTrip.settlementCurrency}
           onConfirm={handleExecuteQuickSettle}

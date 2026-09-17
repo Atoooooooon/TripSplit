@@ -118,6 +118,7 @@ router.get('/:id', (req, res) => {
       currency: s.currency,
       settledAt: s.settled_at,
       note: s.note,
+      expenseId: s.expense_id || null,
     }));
 
     res.json({
